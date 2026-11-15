@@ -23,6 +23,12 @@ A \code{gis2shiny_app} object.
 \description{
 Create a GIS-to-Shiny application specification
 }
+\details{
+Filters start with all categories selected, including blank and
+missing values where present. The first filter field with 2 to 20
+categories determines the map colors. The legend shows categories in
+the filtered map while keeping their colors consistent across selections.
+}
 \examples{
 app <- gis2shiny(sf::st_as_sf(data.frame(x = -84.5, y = 39.1),
   coords = c("x", "y"), crs = 4326))
