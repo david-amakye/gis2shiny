@@ -54,7 +54,7 @@ Set `filter_fields` and `numeric_fields` to choose sidebar controls. Omit
 them for automatic selection or pass `character(0)` to disable either kind.
 Use `popup_fields` to choose which attributes appear when you click a feature.
 
-In the development version, use `color_by` to shade features by a numeric
+Starting in v0.2.0, use `color_by` to shade features by a numeric
 attribute, for example `gis2shiny(points, color_by = "samples")`. The map
 uses up to five color bands based on the full dataset. Filtering keeps the
 band boundaries and colors fixed and displays the bands still in view.
@@ -63,7 +63,7 @@ band boundaries and colors fixed and displays the bands still in view.
 
 Supply an `sf` object or a Shapefile, GeoJSON, or GeoPackage path. Keep Shapefile sidecars beside the `.shp` file. The app supports point, line, polygon, and multipart geometries. Input needs a defined CRS and valid, nonempty geometries. The reader transforms the data to EPSG:4326 for the map.
 
-A GeoPackage opens its first layer by default. In the development version,
+A GeoPackage opens its first layer by default. Starting in v0.2.0,
 use `layer` to choose a different layer by its exact name.
 
 ```r
