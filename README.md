@@ -31,3 +31,5 @@ Run `devtools::test()` and `devtools::check()` to validate the package.
 Supply an `sf` object or a Shapefile, GeoJSON, or GeoPackage path. Keep Shapefile sidecars beside the `.shp` file. For a GeoPackage with several layers, the reader uses the first layer. The app supports point, line, polygon, and multipart geometries. Input needs a defined CRS and valid, nonempty geometries. The reader transforms the data to EPSG:4326 for the map.
 
 Use `shiny::runApp("my_map_app")` to launch the exported project. Edit `app.R` to change the title or selected fields, and keep `data.gpkg` beside it. Install `gis2shiny` on the machine hosting the exported app.
+
+Filters update the map and attribute table together. Blank and missing values can be selected separately. The first filter field with 2 to 20 categories determines map colors, and the legend lists the categories currently visible. To choose which field supplies the colors, list it first in `filter_fields`.

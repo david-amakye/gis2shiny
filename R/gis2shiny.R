@@ -6,6 +6,10 @@
 #'   for all non-geometry fields.
 #' @param filter_fields Character vector of categorical fields to filter, or
 #'   `NULL` to automatically select suitable fields.
+#' @details Filters start with all categories selected, including blank and
+#'   missing values where present. The first filter field with 2 to 20
+#'   categories determines the map colors. The legend shows categories in
+#'   the filtered map while keeping their colors consistent across selections.
 #' @return A `gis2shiny_app` object.
 #' @export
 #' @examples
@@ -30,7 +34,7 @@ gis2shiny <- function(x, title = "GIS Explorer", popup_fields = NULL,
   if (is.null(filter_fields)) {
     automatic <- vapply(attrs[eligible], function(z) {
       if (!(is.factor(z) || is.character(z) || is.logical(z))) return(FALSE)
-      n_values <- length(unique(z[!is.na(z)]))
+      n_values <- length(unique(z))
       n_values >= 2L && n_values <= 20L
     }, logical(1))
     filter_fields <- as.character(names(automatic)[automatic])

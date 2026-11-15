@@ -3,15 +3,32 @@ build_shiny_app <- function(spec) {
   if (!inherits(spec, "gis2shiny_app")) stop("Expected a gis2shiny_app.", call. = FALSE)
   data <- spec$data
   fields <- spec$filter_fields
+  filters <- lapply(fields, function(field) {
+    column <- data[[field]]
+    values <- as.character(column)
+    values[is.na(column)] <- NA_character_
+    choices <- sort(unique(values), na.last = TRUE)
+    labels <- choices
+    labels[which(choices == "")] <- "(blank)"
+    labels[is.na(choices)] <- "(missing)"
+    label_order <- order(is.na(choices) | choices == "")
+    labels[label_order] <- make.unique(labels[label_order], sep = " ")
+    list(choices = stats::setNames(as.character(seq_along(choices)), labels),
+         value_ids = match(values, choices))
+  })
+  counts <- vapply(filters, function(filter) length(filter$choices), integer(1))
+  legend_index <- match(TRUE, counts >= 2L & counts <= 20L)
+  colors <- if (is.na(legend_index)) "#03F" else
+    grDevices::hcl.colors(counts[[legend_index]], "Dark 3")
+
   ui <- shiny::fluidPage(
     shiny::titlePanel(spec$title),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
-        lapply(seq_along(fields), function(i) {
-          field <- fields[[i]]
-          values <- sort(unique(as.character(stats::na.omit(data[[field]]))))
-          shiny::selectInput(paste0("filter_", i), field,
-                             choices = values, selected = values, multiple = TRUE)
+        lapply(seq_along(filters), function(i) {
+          choices <- filters[[i]]$choices
+          shiny::selectInput(paste0("filter_", i), fields[[i]],
+                             choices = choices, selected = unname(choices), multiple = TRUE)
         })
       ),
       shiny::mainPanel(
@@ -21,21 +38,31 @@ build_shiny_app <- function(spec) {
     )
   )
   server <- function(input, output, session) {
-    filtered <- shiny::reactive({
-      d <- data
-      for (i in seq_along(fields)) {
-        selected <- input[[paste0("filter_", i)]]
-        if (is.null(selected)) selected <- character()
-        d <- d[!is.na(d[[fields[[i]]]]) & as.character(d[[fields[[i]]]]) %in% selected, ]
+    visible <- shiny::reactive({
+      keep <- rep(TRUE, nrow(data))
+      for (i in seq_along(filters)) {
+        keep <- keep & filters[[i]]$value_ids %in% input[[paste0("filter_", i)]]
       }
-      d
+      which(keep)
     })
+    filtered <- shiny::reactive(data[visible(), ])
     output$map <- leaflet::renderLeaflet({
       d <- filtered()
       m <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE)) |>
         leaflet::addTiles()
       if (nrow(d) == 0L) return(m)
       labels <- popup_html(d, spec$popup_fields)
+      feature_colors <- rep(colors[[1L]], nrow(d))
+      if (!is.na(legend_index)) {
+        filter <- filters[[legend_index]]
+        ids <- filter$value_ids[visible()]
+        feature_colors <- colors[ids]
+        present <- sort(unique(ids))
+        m <- leaflet::addLegend(m, position = "bottomright", colors = colors[present],
+                                labels = htmltools::htmlEscape(names(filter$choices)[present]),
+                                title = htmltools::htmlEscape(fields[[legend_index]]),
+                                opacity = 1)
+      }
       typ <- as.character(sf::st_geometry_type(d))
       points <- typ %in% c("POINT", "MULTIPOINT")
       lines <- typ %in% c("LINESTRING", "MULTILINESTRING")
@@ -46,15 +73,18 @@ build_shiny_app <- function(spec) {
         point_data <- sf::st_cast(point_data, "POINT", warn = FALSE)
         m <- leaflet::addCircleMarkers(m, data = point_data,
                                        popup = labels[point_data$feature],
+                                       color = feature_colors[point_data$feature],
                                        radius = 5)
       }
       if (any(lines)) {
         line_data <- sf::st_cast(sf::st_geometry(d)[lines], "MULTILINESTRING")
-        m <- leaflet::addPolylines(m, data = line_data, popup = labels[lines])
+        m <- leaflet::addPolylines(m, data = line_data, popup = labels[lines],
+                                  color = feature_colors[lines])
       }
       if (any(polygons)) {
         polygon_data <- sf::st_cast(sf::st_geometry(d)[polygons], "MULTIPOLYGON")
         m <- leaflet::addPolygons(m, data = polygon_data, popup = labels[polygons],
+                                  color = feature_colors[polygons],
                                   fillOpacity = 0.5)
       }
       bbox <- sf::st_bbox(d)
