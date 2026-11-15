@@ -1,4 +1,4 @@
-# gis2shiny 0.1.0 (in development)
+# gis2shiny 0.1.0
 
 - Validate supported vector inputs, reject empty and invalid geometries, and normalize coordinates for Leaflet.
 - Render mixed and multipart geometries and preserve their feature popups.

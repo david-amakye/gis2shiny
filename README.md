@@ -3,7 +3,12 @@
 Turn vector GIS data into interactive R Shiny dashboards with maps, filters,
 summaries, and downloads.
 
-**Status:** v0.1.0 in development. Target release is December 15, 2026.
+## Install v0.1.0
+
+```r
+install.packages("remotes")
+remotes::install_github("david-amakye/gis2shiny@v0.1.0")
+```
 
 ## Install from a local checkout
 
