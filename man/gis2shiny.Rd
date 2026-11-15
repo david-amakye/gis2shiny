@@ -9,7 +9,8 @@ gis2shiny(
   title = "GIS Explorer",
   popup_fields = NULL,
   filter_fields = NULL,
-  numeric_fields = NULL
+  numeric_fields = NULL,
+  layer = NULL
 )
 }
 \arguments{
@@ -26,6 +27,9 @@ for all non-geometry fields.}
 \item{numeric_fields}{Character vector of fields to filter by inclusive
 numeric ranges. Use \code{NULL} to choose varying plain numeric fields
 automatically or \code{character(0)} to disable numeric filters.}
+
+\item{layer}{Name of a GeoPackage layer, or \code{NULL} to read the first layer.
+Use \code{sf::st_layers(x)$name} to list layer names.}
 }
 \value{
 A \code{gis2shiny_app} object.

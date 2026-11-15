@@ -1,13 +1,23 @@
 #' Read vector GIS data
 #'
 #' @param x An `sf` object or a path to a Shapefile, GeoJSON, or GeoPackage.
-#'   For a GeoPackage with multiple layers, the first layer is read.
+#' @param layer Name of a GeoPackage layer, or `NULL` to read the first layer.
+#'   Use `sf::st_layers(x)$name` to list layer names.
 #' @details Every feature must have a nonempty, valid point, line, or polygon
 #'   geometry (including multipart variants). Z and M coordinates are dropped
 #'   for the two-dimensional map.
 #' @return A validated `sf` object, transformed to EPSG:4326.
 #' @export
-read_gis <- function(x) {
+read_gis <- function(x, layer = NULL) {
+  if (!is.null(layer) &&
+      (!is.character(layer) || length(layer) != 1L || is.na(layer) || !nzchar(layer))) {
+    stop("`layer` must be a single nonempty layer name.", call. = FALSE)
+  }
+  if (!is.null(layer) &&
+      (inherits(x, "sf") || !is.character(x) || length(x) != 1L || is.na(x) ||
+       tolower(tools::file_ext(x)) != "gpkg")) {
+    stop("`layer` can only be used with a GeoPackage path.", call. = FALSE)
+  }
   if (inherits(x, "sf")) {
     data <- x
   } else if (is.character(x) && length(x) == 1L && !is.na(x)) {
@@ -16,7 +26,16 @@ read_gis <- function(x) {
       stop("Expected a Shapefile (.shp), GeoJSON (.geojson), or GeoPackage (.gpkg).",
            call. = FALSE)
     }
-    data <- sf::st_read(x, quiet = TRUE)
+    if (is.null(layer)) {
+      data <- sf::st_read(x, quiet = TRUE)
+    } else {
+      available <- sf::st_layers(x)$name
+      if (!layer %in% available) {
+        stop("GeoPackage layer ", sQuote(layer), " was not found. Available layers: ",
+             paste(sQuote(available), collapse = ", "), ".", call. = FALSE)
+      }
+      data <- sf::st_read(x, layer = layer, quiet = TRUE)
+    }
   } else {
     stop("`x` must be an sf object or a single GIS file path.", call. = FALSE)
   }

@@ -4,11 +4,13 @@
 \alias{read_gis}
 \title{Read vector GIS data}
 \usage{
-read_gis(x)
+read_gis(x, layer = NULL)
 }
 \arguments{
-\item{x}{An \code{sf} object or a path to a Shapefile, GeoJSON, or GeoPackage.
-For a GeoPackage with multiple layers, the first layer is read.}
+\item{x}{An \code{sf} object or a path to a Shapefile, GeoJSON, or GeoPackage.}
+
+\item{layer}{Name of a GeoPackage layer, or \code{NULL} to read the first layer.
+Use \code{sf::st_layers(x)$name} to list layer names.}
 }
 \value{
 A validated \code{sf} object, transformed to EPSG:4326.
