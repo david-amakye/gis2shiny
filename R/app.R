@@ -2,6 +2,10 @@
 build_shiny_app <- function(spec) {
   if (!inherits(spec, "gis2shiny_app")) stop("Expected a gis2shiny_app.", call. = FALSE)
   data <- spec$data
+  geometry_types <- as.character(sf::st_geometry_type(data))
+  families <- sub("^MULTI", "", geometry_types)
+  group_names <- c(POINT = "Points", LINESTRING = "Lines", POLYGON = "Polygons")
+  overlay_groups <- unname(group_names[names(group_names) %in% families])
   fields <- spec$filter_fields
   filters <- lapply(fields, function(field) {
     column <- data[[field]]
@@ -20,6 +24,15 @@ build_shiny_app <- function(spec) {
   legend_index <- match(TRUE, counts >= 2L & counts <= 20L)
   colors <- if (is.na(legend_index)) "#03F" else
     grDevices::hcl.colors(counts[[legend_index]], "Dark 3")
+  ranges <- lapply(seq_along(spec$numeric_fields), function(i) {
+    field <- spec$numeric_fields[[i]]
+    numeric_filter(data[[field]], field, i)
+  })
+  summary_choices <- c("Geometry type" = "geometry")
+  if (!is.na(legend_index)) {
+    summary_choices <- c(summary_choices,
+                         stats::setNames("category", fields[[legend_index]]))
+  }
 
   ui <- shiny::fluidPage(
     shiny::titlePanel(spec$title),
@@ -29,11 +42,32 @@ build_shiny_app <- function(spec) {
           choices <- filters[[i]]$choices
           shiny::selectInput(paste0("filter_", i), fields[[i]],
                              choices = choices, selected = unname(choices), multiple = TRUE)
-        })
+        }),
+        if (length(ranges)) {
+          shiny::tags$details(
+            shiny::tags$summary("Numeric filters"),
+            lapply(ranges, numeric_filter_ui)
+          )
+        }
       ),
       shiny::mainPanel(
         leaflet::leafletOutput("map", height = 550),
-        DT::DTOutput("attributes")
+        shiny::tabsetPanel(
+          shiny::tabPanel(
+            "Attributes",
+            DT::DTOutput("attributes"),
+            shiny::downloadButton("download_csv", "Download CSV"),
+            shiny::downloadButton("download_geojson", "Download GeoJSON")
+          ),
+          shiny::tabPanel(
+            "Summary",
+            shiny::textOutput("feature_count"),
+            if (length(summary_choices) > 1L) {
+              shiny::selectInput("summary_group", "Group by", choices = summary_choices)
+            },
+            shiny::plotOutput("summary_chart", height = "350px")
+          )
+        )
       )
     )
   )
@@ -43,6 +77,9 @@ build_shiny_app <- function(spec) {
       for (i in seq_along(filters)) {
         keep <- keep & filters[[i]]$value_ids %in% input[[paste0("filter_", i)]]
       }
+      for (filter in ranges) {
+        keep <- keep & in_numeric_range(filter, input)
+      }
       which(keep)
     })
     filtered <- shiny::reactive(data[visible(), ])
@@ -50,6 +87,13 @@ build_shiny_app <- function(spec) {
       d <- filtered()
       m <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE)) |>
         leaflet::addTiles()
+      if (length(overlay_groups) > 1L) {
+        m <- leaflet::addLayersControl(m, overlayGroups = overlay_groups)
+        shown <- shiny::isolate(input$map_groups)
+        if (!is.null(shown)) {
+          m <- leaflet::hideGroup(m, setdiff(overlay_groups, shown))
+        }
+      }
       if (nrow(d) == 0L) return(m)
       labels <- popup_html(d, spec$popup_fields)
       feature_colors <- rep(colors[[1L]], nrow(d))
@@ -63,28 +107,28 @@ build_shiny_app <- function(spec) {
                                 title = htmltools::htmlEscape(fields[[legend_index]]),
                                 opacity = 1)
       }
-      typ <- as.character(sf::st_geometry_type(d))
-      points <- typ %in% c("POINT", "MULTIPOINT")
-      lines <- typ %in% c("LINESTRING", "MULTILINESTRING")
-      polygons <- typ %in% c("POLYGON", "MULTIPOLYGON")
+      typ <- families[visible()]
+      points <- typ == "POINT"
+      lines <- typ == "LINESTRING"
+      polygons <- typ == "POLYGON"
       if (any(points)) {
         geometry <- sf::st_cast(sf::st_geometry(d)[points], "MULTIPOINT")
         point_data <- sf::st_sf(feature = which(points), geometry = geometry)
         point_data <- sf::st_cast(point_data, "POINT", warn = FALSE)
         m <- leaflet::addCircleMarkers(m, data = point_data,
                                        popup = labels[point_data$feature],
-                                       color = feature_colors[point_data$feature],
+                                       color = feature_colors[point_data$feature], group = "Points",
                                        radius = 5)
       }
       if (any(lines)) {
         line_data <- sf::st_cast(sf::st_geometry(d)[lines], "MULTILINESTRING")
         m <- leaflet::addPolylines(m, data = line_data, popup = labels[lines],
-                                  color = feature_colors[lines])
+                                  color = feature_colors[lines], group = "Lines")
       }
       if (any(polygons)) {
         polygon_data <- sf::st_cast(sf::st_geometry(d)[polygons], "MULTIPOLYGON")
         m <- leaflet::addPolygons(m, data = polygon_data, popup = labels[polygons],
-                                  color = feature_colors[polygons],
+                                  color = feature_colors[polygons], group = "Polygons",
                                   fillOpacity = 0.5)
       }
       bbox <- sf::st_bbox(d)
@@ -94,9 +138,51 @@ build_shiny_app <- function(spec) {
       }
       m
     })
+    attributes <- shiny::reactive(feature_attributes(filtered(), visible()))
     output$attributes <- DT::renderDT({
-      DT::datatable(sf::st_drop_geometry(filtered()), options = list(pageLength = 10), rownames = FALSE)
+      DT::datatable(attributes(), options = list(pageLength = 10), rownames = FALSE)
     })
+    summary_data <- shiny::reactive({
+      if (identical(input$summary_group, "category") && !is.na(legend_index)) {
+        filter <- filters[[legend_index]]
+        counts <- tabulate(filter$value_ids[visible()], nbins = length(filter$choices))
+        present <- which(counts > 0L)
+        return(list(labels = names(filter$choices)[present], counts = counts[present],
+                    colors = colors[present]))
+      }
+      counts <- table(geometry_types[visible()])
+      list(labels = names(counts), counts = as.integer(counts), colors = "#03F")
+    })
+    output$feature_count <- shiny::renderText({
+      paste(format(nrow(filtered()), big.mark = ","), "features")
+    })
+    output$summary_chart <- shiny::renderPlot({
+      summary <- summary_data()
+      shiny::validate(shiny::need(length(summary$counts) > 0L, "No features match the filters."))
+      labels <- ifelse(nchar(summary$labels) > 24L,
+                       paste0(substr(summary$labels, 1L, 21L), "..."), summary$labels)
+      margin <- max(6, max(nchar(labels)) * 0.55)
+      graphics::par(mar = c(4, margin, 1, 1))
+      graphics::barplot(rev(summary$counts), names.arg = rev(labels), horiz = TRUE,
+                        col = rev(summary$colors), border = NA, las = 1,
+                        xlab = "Features")
+    }, alt = function() {
+      summary <- summary_data()
+      paste(paste0(summary$labels, ": ", summary$counts), collapse = ". ")
+    })
+    output$download_csv <- shiny::downloadHandler(
+      filename = "features.csv",
+      contentType = "text/csv",
+      content = function(path) {
+        utils::write.csv(flat_attributes(attributes()), path, row.names = FALSE,
+                         fileEncoding = "UTF-8")
+      }
+    )
+    output$download_geojson <- shiny::downloadHandler(
+      filename = "features.geojson",
+      contentType = "application/geo+json",
+      content = function(path) write_feature_geojson(filtered(), path)
+    )
   }
   shiny::shinyApp(ui, server)
 }
@@ -106,9 +192,7 @@ popup_html <- function(data, fields) {
   attrs <- sf::st_drop_geometry(data)
   vapply(seq_len(nrow(attrs)), function(i) {
     paste(vapply(fields, function(field) {
-      column <- attrs[[field]]
-      val <- if (is.matrix(column)) column[i, ] else column[[i]]
-      val <- paste(as.character(val), collapse = ", ")
+      val <- attribute_text(attrs[[field]], i)
       paste0("<strong>", htmltools::htmlEscape(field), "</strong>: ",
              htmltools::htmlEscape(val))
     }, character(1)), collapse = "<br/>")

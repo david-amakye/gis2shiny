@@ -4,7 +4,13 @@
 \alias{gis2shiny}
 \title{Create a GIS-to-Shiny application specification}
 \usage{
-gis2shiny(x, title = "GIS Explorer", popup_fields = NULL, filter_fields = NULL)
+gis2shiny(
+  x,
+  title = "GIS Explorer",
+  popup_fields = NULL,
+  filter_fields = NULL,
+  numeric_fields = NULL
+)
 }
 \arguments{
 \item{x}{An \code{sf} object or vector GIS file path.}
@@ -16,6 +22,10 @@ for all non-geometry fields.}
 
 \item{filter_fields}{Character vector of categorical fields to filter, or
 \code{NULL} to automatically select suitable fields.}
+
+\item{numeric_fields}{Character vector of fields to filter by inclusive
+numeric ranges. Use \code{NULL} to choose varying plain numeric fields
+automatically or \code{character(0)} to disable numeric filters.}
 }
 \value{
 A \code{gis2shiny_app} object.
@@ -28,6 +38,9 @@ Filters start with all categories selected, including blank and
 missing values where present. The first filter field with 2 to 20
 categories determines the map colors. The legend shows categories in
 the filtered map while keeping their colors consistent across selections.
+Numeric ranges start at the observed bounds. Missing and non-finite
+values can be included separately. The map, table, summaries, and
+downloads use the same filtered features.
 }
 \examples{
 app <- gis2shiny(sf::st_as_sf(data.frame(x = -84.5, y = 39.1),

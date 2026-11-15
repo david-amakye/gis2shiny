@@ -46,6 +46,7 @@ test_that("all geometry families render together and filtering can yield no rows
     expect_match(output$map, "addPolylines")
     expect_match(output$map, "addPolygons")
     expect_match(output$map, "addLegend")
+    expect_match(output$map, "addLayersControl")
     expect_match(output$map, '0,2,4', fixed = TRUE)
     session$setInputs(filter_1 = character())
     expect_equal(nrow(filtered()), 0L)
