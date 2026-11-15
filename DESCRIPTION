@@ -1,9 +1,12 @@
 Package: gis2shiny
 Title: Turn GIS Vector Data into Interactive Shiny Applications
 Version: 0.1.0
-Authors@R: person('David', 'Amakye', role = c('aut', 'cre'), email = 'maintainer@example.org')
+Authors@R: person('David', 'Amakye', role = c('aut', 'cre'), email = 'amakyekojodavid@gmail.com')
 Description: Creates interactive Shiny applications from simple features objects
-    and vector GIS files, with maps, attribute filters, and data tables.
+    and vector GIS files, with maps, attribute filters, tables, summaries,
+    and downloads.
+URL: https://github.com/david-amakye/gis2shiny
+BugReports: https://github.com/david-amakye/gis2shiny/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.1.0)

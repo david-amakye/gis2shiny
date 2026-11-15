@@ -49,7 +49,8 @@ export_app <- function(app, path) {
     "data <- read_gis('data.gpkg')",
     paste0("app <- gis2shiny(data, title = ", literal(app$title), ","),
     paste0("  popup_fields = ", literal(app$popup_fields), ","),
-    paste0("  filter_fields = ", literal(app$filter_fields), ")"),
+    paste0("  filter_fields = ", literal(app$filter_fields), ","),
+    paste0("  numeric_fields = ", literal(app$numeric_fields), ")"),
     "gis2shiny:::build_shiny_app(app)"
   )
   writeLines(code, staged_app, useBytes = TRUE)
