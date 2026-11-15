@@ -1,3 +1,7 @@
+# gis2shiny (development version)
+
+- Select a named layer from a multi-layer GeoPackage with the `layer` argument.
+
 # gis2shiny 0.1.0
 
 - Validate supported vector inputs, reject empty and invalid geometries, and normalize coordinates for Leaflet.

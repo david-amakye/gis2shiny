@@ -56,7 +56,15 @@ Use `popup_fields` to choose which attributes appear when you click a feature.
 
 ## Scope
 
-Supply an `sf` object or a Shapefile, GeoJSON, or GeoPackage path. Keep Shapefile sidecars beside the `.shp` file. For a GeoPackage with several layers, the reader uses the first layer. The app supports point, line, polygon, and multipart geometries. Input needs a defined CRS and valid, nonempty geometries. The reader transforms the data to EPSG:4326 for the map.
+Supply an `sf` object or a Shapefile, GeoJSON, or GeoPackage path. Keep Shapefile sidecars beside the `.shp` file. The app supports point, line, polygon, and multipart geometries. Input needs a defined CRS and valid, nonempty geometries. The reader transforms the data to EPSG:4326 for the map.
+
+A GeoPackage opens its first layer by default. In the development version,
+use `layer` to choose a different layer by its exact name.
+
+```r
+sf::st_layers("county.gpkg")$name
+app <- gis2shiny("county.gpkg", layer = "roads")
+```
 
 ## Export and run
 

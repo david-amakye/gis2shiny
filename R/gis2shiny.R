@@ -9,6 +9,7 @@
 #' @param numeric_fields Character vector of fields to filter by inclusive
 #'   numeric ranges. Use `NULL` to choose varying plain numeric fields
 #'   automatically or `character(0)` to disable numeric filters.
+#' @inheritParams read_gis
 #' @details Filters start with all categories selected, including blank and
 #'   missing values where present. The first filter field with 2 to 20
 #'   categories determines the map colors. The legend shows categories in
@@ -23,8 +24,8 @@
 #'   coords = c("x", "y"), crs = 4326))
 #' print(app)
 gis2shiny <- function(x, title = "GIS Explorer", popup_fields = NULL,
-                      filter_fields = NULL, numeric_fields = NULL) {
-  data <- read_gis(x)
+                      filter_fields = NULL, numeric_fields = NULL, layer = NULL) {
+  data <- read_gis(x, layer = layer)
   attrs <- sf::st_drop_geometry(data)
   if (!is.character(title) || length(title) != 1L || is.na(title)) {
     stop("`title` must be a single character string.", call. = FALSE)
