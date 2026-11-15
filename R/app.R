@@ -40,9 +40,23 @@ build_shiny_app <- function(spec) {
       points <- typ %in% c("POINT", "MULTIPOINT")
       lines <- typ %in% c("LINESTRING", "MULTILINESTRING")
       polygons <- typ %in% c("POLYGON", "MULTIPOLYGON")
-      if (any(points)) m <- leaflet::addCircleMarkers(m, data = d[points, ], popup = labels[points], radius = 5)
-      if (any(lines)) m <- leaflet::addPolylines(m, data = d[lines, ], popup = labels[lines])
-      if (any(polygons)) m <- leaflet::addPolygons(m, data = d[polygons, ], popup = labels[polygons], fillOpacity = 0.5)
+      if (any(points)) {
+        geometry <- sf::st_cast(sf::st_geometry(d)[points], "MULTIPOINT")
+        point_data <- sf::st_sf(feature = which(points), geometry = geometry)
+        point_data <- sf::st_cast(point_data, "POINT", warn = FALSE)
+        m <- leaflet::addCircleMarkers(m, data = point_data,
+                                       popup = labels[point_data$feature],
+                                       radius = 5)
+      }
+      if (any(lines)) {
+        line_data <- sf::st_cast(sf::st_geometry(d)[lines], "MULTILINESTRING")
+        m <- leaflet::addPolylines(m, data = line_data, popup = labels[lines])
+      }
+      if (any(polygons)) {
+        polygon_data <- sf::st_cast(sf::st_geometry(d)[polygons], "MULTIPOLYGON")
+        m <- leaflet::addPolygons(m, data = polygon_data, popup = labels[polygons],
+                                  fillOpacity = 0.5)
+      }
       bbox <- sf::st_bbox(d)
       if (all(is.finite(bbox))) {
         m <- leaflet::fitBounds(m, lng1 = unname(bbox["xmin"]), lat1 = unname(bbox["ymin"]),
@@ -62,8 +76,9 @@ popup_html <- function(data, fields) {
   attrs <- sf::st_drop_geometry(data)
   vapply(seq_len(nrow(attrs)), function(i) {
     paste(vapply(fields, function(field) {
-      val <- as.character(attrs[[field]][i])
-      if (is.na(val)) val <- "NA"
+      column <- attrs[[field]]
+      val <- if (is.matrix(column)) column[i, ] else column[[i]]
+      val <- paste(as.character(val), collapse = ", ")
       paste0("<strong>", htmltools::htmlEscape(field), "</strong>: ",
              htmltools::htmlEscape(val))
     }, character(1)), collapse = "<br/>")
