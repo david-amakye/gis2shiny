@@ -1,5 +1,7 @@
 # gis2shiny 0.2.0
 
+- Make the OpenStreetMap basemap optional and show a message when online tiles are unavailable.
+
 - Select a named layer from a multi-layer GeoPackage with the `layer` argument.
 - Shade maps by a numeric attribute with `color_by`. The legend bands stay consistent as the data is filtered.
 

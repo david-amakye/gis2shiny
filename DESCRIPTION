@@ -2,9 +2,11 @@ Package: gis2shiny
 Title: Turn GIS Vector Data into Interactive Shiny Applications
 Version: 0.2.0
 Authors@R: person('David', 'Amakye', role = c('aut', 'cre'), email = 'amakyekojodavid@gmail.com')
-Description: Creates interactive Shiny applications from simple features objects
-    and vector GIS files, with maps, attribute filters, tables, summaries,
-    and downloads.
+Description: Creates interactive 'Shiny' applications from simple features
+    objects and vector GIS files in Shapefile, GeoJSON, and GeoPackage formats.
+    Explore features on a map, filter their attributes, view tables and
+    summaries, and download selected data. Export an editable 'Shiny'
+    application with its spatial data for local use or deployment.
 URL: https://github.com/david-amakye/gis2shiny
 BugReports: https://github.com/david-amakye/gis2shiny/issues
 License: MIT + file LICENSE
@@ -16,6 +18,7 @@ Imports:
     sf,
     shiny,
     leaflet,
+    htmlwidgets,
     DT,
     htmltools
 Suggests:
