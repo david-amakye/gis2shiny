@@ -10,13 +10,18 @@
 #'   numeric ranges. Use `NULL` to choose varying plain numeric fields
 #'   automatically or `character(0)` to disable numeric filters.
 #' @inheritParams read_gis
+#' @param color_by Name of a plain numeric attribute for thematic map colors.
+#'   Use `NULL` to keep automatic categorical colors.
 #' @details Filters start with all categories selected, including blank and
-#'   missing values where present. The first filter field with 2 to 20
-#'   categories determines the map colors. The legend shows categories in
+#'   missing values where present. By default, the first filter field with 2 to
+#'   20 categories determines the map colors. The legend shows categories in
 #'   the filtered map while keeping their colors consistent across selections.
 #'   Numeric ranges start at the observed bounds. Missing and non-finite
 #'   values can be included separately. The map, table, summaries, and
 #'   downloads use the same filtered features.
+#'   Numeric map colors use up to five bands based on the original data's
+#'   quintiles. The bands stay fixed while filtering. Missing and non-finite
+#'   values use a separate color.
 #' @return A `gis2shiny_app` object.
 #' @export
 #' @examples
@@ -24,7 +29,8 @@
 #'   coords = c("x", "y"), crs = 4326))
 #' print(app)
 gis2shiny <- function(x, title = "GIS Explorer", popup_fields = NULL,
-                      filter_fields = NULL, numeric_fields = NULL, layer = NULL) {
+                      filter_fields = NULL, numeric_fields = NULL, layer = NULL,
+                      color_by = NULL) {
   data <- read_gis(x, layer = layer)
   attrs <- sf::st_drop_geometry(data)
   if (!is.character(title) || length(title) != 1L || is.na(title)) {
@@ -77,9 +83,19 @@ gis2shiny <- function(x, title = "GIS Explorer", popup_fields = NULL,
   if (length(intersect(filter_fields, numeric_fields))) {
     stop("A field can have either a categorical filter or a numeric range.", call. = FALSE)
   }
+  if (!is.null(color_by)) {
+    if (!is.character(color_by) || length(color_by) != 1L || is.na(color_by) ||
+        !color_by %in% names(attrs)) {
+      stop("`color_by` must name a single attribute.", call. = FALSE)
+    }
+    if (!numeric_candidates[[color_by]]) {
+      stop("`color_by` must name a plain numeric attribute with a finite value.",
+           call. = FALSE)
+    }
+  }
   structure(list(data = data, title = title,
                  popup_fields = popup_fields, filter_fields = filter_fields,
-                 numeric_fields = numeric_fields),
+                 numeric_fields = numeric_fields, color_by = color_by),
             class = "gis2shiny_app")
 }
 

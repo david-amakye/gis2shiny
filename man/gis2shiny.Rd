@@ -10,7 +10,8 @@ gis2shiny(
   popup_fields = NULL,
   filter_fields = NULL,
   numeric_fields = NULL,
-  layer = NULL
+  layer = NULL,
+  color_by = NULL
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ automatically or \code{character(0)} to disable numeric filters.}
 
 \item{layer}{Name of a GeoPackage layer, or \code{NULL} to read the first layer.
 Use \code{sf::st_layers(x)$name} to list layer names.}
+
+\item{color_by}{Name of a plain numeric attribute for thematic map colors.
+Use \code{NULL} to keep automatic categorical colors.}
 }
 \value{
 A \code{gis2shiny_app} object.
@@ -39,12 +43,15 @@ Create a GIS-to-Shiny application specification
 }
 \details{
 Filters start with all categories selected, including blank and
-missing values where present. The first filter field with 2 to 20
-categories determines the map colors. The legend shows categories in
+missing values where present. By default, the first filter field with 2 to
+20 categories determines the map colors. The legend shows categories in
 the filtered map while keeping their colors consistent across selections.
 Numeric ranges start at the observed bounds. Missing and non-finite
 values can be included separately. The map, table, summaries, and
 downloads use the same filtered features.
+Numeric map colors use up to five bands based on the original data's
+quintiles. The bands stay fixed while filtering. Missing and non-finite
+values use a separate color.
 }
 \examples{
 app <- gis2shiny(sf::st_as_sf(data.frame(x = -84.5, y = 39.1),

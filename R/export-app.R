@@ -50,7 +50,9 @@ export_app <- function(app, path) {
     paste0("app <- gis2shiny(data, title = ", literal(app$title), ","),
     paste0("  popup_fields = ", literal(app$popup_fields), ","),
     paste0("  filter_fields = ", literal(app$filter_fields), ","),
-    paste0("  numeric_fields = ", literal(app$numeric_fields), ")"),
+    paste0("  numeric_fields = ", literal(app$numeric_fields),
+           if (is.null(app$color_by)) ")" else ","),
+    if (!is.null(app$color_by)) paste0("  color_by = ", literal(app$color_by), ")"),
     "gis2shiny:::build_shiny_app(app)"
   )
   writeLines(code, staged_app, useBytes = TRUE)
