@@ -46,6 +46,7 @@ build_shiny_app <- function(spec) {
     shiny::titlePanel(spec$title),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
+        shiny::checkboxInput("online_basemap", "Show OpenStreetMap basemap", value = FALSE),
         lapply(seq_along(filters), function(i) {
           choices <- filters[[i]]$choices
           shiny::selectInput(paste0("filter_", i), fields[[i]],
@@ -59,6 +60,8 @@ build_shiny_app <- function(spec) {
         }
       ),
       shiny::mainPanel(
+        shiny::tags$div(id = "basemap_status", role = "status", hidden = NA,
+                        "OpenStreetMap tiles are unavailable. Your GIS layers are still usable."),
         leaflet::leafletOutput("map", height = 550),
         shiny::tabsetPanel(
           shiny::tabPanel(
@@ -93,8 +96,30 @@ build_shiny_app <- function(spec) {
     filtered <- shiny::reactive(data[visible(), ])
     output$map <- leaflet::renderLeaflet({
       d <- filtered()
-      m <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE)) |>
-        leaflet::addTiles()
+      m <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE))
+      if (isTRUE(input$online_basemap)) {
+        m <- leaflet::addTiles(m, "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                               attribution = paste0(
+                                 '&copy; <a href="https://www.openstreetmap.org/copyright">',
+                                 'OpenStreetMap contributors</a>'
+                               ))
+      }
+      m <- htmlwidgets::onRender(m, '
+        function(el) {
+          const status = document.getElementById("basemap_status");
+          status.hidden = true;
+          const showFailure = function() { status.hidden = false; };
+          if (!el.dataset.basemapErrorListener) {
+            el.addEventListener("error", function(event) {
+              if (event.target.matches("img.leaflet-tile")) showFailure();
+            }, true);
+            el.dataset.basemapErrorListener = "true";
+          }
+          el.querySelectorAll("img.leaflet-tile").forEach(function(tile) {
+            if (tile.complete && !tile.naturalWidth) showFailure();
+          });
+        }
+      ')
       if (length(overlay_groups) > 1L) {
         m <- leaflet::addLayersControl(m, overlayGroups = overlay_groups)
         shown <- shiny::isolate(input$map_groups)

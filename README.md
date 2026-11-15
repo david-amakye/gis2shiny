@@ -13,7 +13,7 @@ remotes::install_github("david-amakye/gis2shiny@v0.1.0")
 ## Install from a local checkout
 
 ```r
-install.packages(c("sf", "shiny", "leaflet", "DT", "htmltools", "testthat", "devtools", "roxygen2"))
+install.packages(c("sf", "shiny", "leaflet", "htmlwidgets", "DT", "htmltools", "testthat", "devtools", "roxygen2"))
 devtools::install(".")
 ```
 
@@ -43,6 +43,9 @@ source(system.file("examples/nc-counties.R", package = "gis2shiny", mustWork = T
   Blank or missing categories can be selected separately. Numeric filters
   start at the observed bounds and include missing and non-finite values by
   default when present.
+- The map starts with your GIS layers. Turn on **Show OpenStreetMap basemap**
+  to request online tiles from OpenStreetMap. If tiles fail to load, the app
+  shows a message and keeps your GIS layers available.
 - By default, the first categorical filter with 2 to 20 choices determines map colors.
   The legend shows visible categories, and the layer menu on mixed-geometry
   maps toggles points, lines, and polygons independently.
