@@ -2,7 +2,7 @@
 
 Generate interactive R Shiny maps and attribute tables from vector GIS data.
 
-**Status:** initial unverified prototype (v0.1.0 development). Target: December 15, 2026.
+**Status:** v0.1.0 in development. Target release is December 15, 2026.
 
 ## Install from a local checkout
 
@@ -19,8 +19,8 @@ library(sf)
 points <- st_as_sf(data.frame(group = c("A", "B"), x = c(-84.5, -84.4), y = c(39.1, 39.2)),
                    coords = c("x", "y"), crs = 4326)
 app <- gis2shiny(points)
-run_app(app)
 export_app(app, "my_map_app")
+run_app(app)
 ```
 
 Run `devtools::document()` before package checking to generate `.Rd` help files.
@@ -28,6 +28,6 @@ Run `devtools::test()` and `devtools::check()` to validate the package.
 
 ## Scope
 
-Currently supports vector geometries (points, lines, polygons) from `sf` or files readable by `sf::st_read()`.
-The exported app requires `gis2shiny` on the deployment server.
-CRS must be defined. No raster support, custom styling, or multiple layers yet.
+Supply an `sf` object or a Shapefile, GeoJSON, or GeoPackage path. Keep Shapefile sidecars beside the `.shp` file. For a GeoPackage with several layers, the reader uses the first layer. The app supports point, line, polygon, and multipart geometries. Input needs a defined CRS and valid, nonempty geometries. The reader transforms the data to EPSG:4326 for the map.
+
+Use `shiny::runApp("my_map_app")` to launch the exported project. Edit `app.R` to change the title or selected fields, and keep `data.gpkg` beside it. Install `gis2shiny` on the machine hosting the exported app.

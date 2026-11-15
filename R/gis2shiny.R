@@ -15,20 +15,35 @@
 gis2shiny <- function(x, title = "GIS Explorer", popup_fields = NULL,
                       filter_fields = NULL) {
   data <- read_gis(x)
-  attrs <- names(sf::st_drop_geometry(data))
-  if (is.null(popup_fields)) popup_fields <- attrs
-  if (!all(popup_fields %in% attrs)) stop("Unknown popup field(s).", call. = FALSE)
-  if (is.null(filter_fields)) {
-    eligible <- vapply(sf::st_drop_geometry(data), function(z) {
-      (is.factor(z) || is.character(z) || is.logical(z)) &&
-        length(unique(z[!is.na(z)])) >= 2L &&
-        length(unique(z[!is.na(z)])) <= 20L
-    }, logical(1))
-    filter_fields <- names(eligible)[eligible]
+  attrs <- sf::st_drop_geometry(data)
+  if (!is.character(title) || length(title) != 1L || is.na(title)) {
+    stop("`title` must be a single character string.", call. = FALSE)
   }
-  if (!all(filter_fields %in% attrs)) stop("Unknown filter field(s).", call. = FALSE)
+  if (is.null(popup_fields)) popup_fields <- as.character(names(attrs))
+  if (!is.character(popup_fields) || !all(popup_fields %in% names(attrs))) {
+    stop("Unknown popup field(s). Supply a character vector of attribute names.",
+         call. = FALSE)
+  }
+  eligible <- vapply(attrs, function(z) {
+    is.atomic(z) && is.null(dim(z))
+  }, logical(1))
+  if (is.null(filter_fields)) {
+    automatic <- vapply(attrs[eligible], function(z) {
+      if (!(is.factor(z) || is.character(z) || is.logical(z))) return(FALSE)
+      n_values <- length(unique(z[!is.na(z)]))
+      n_values >= 2L && n_values <= 20L
+    }, logical(1))
+    filter_fields <- as.character(names(automatic)[automatic])
+  }
+  if (!is.character(filter_fields) || !all(filter_fields %in% names(attrs))) {
+    stop("Unknown filter field(s). Supply a character vector of attribute names.",
+         call. = FALSE)
+  }
+  if (!all(eligible[filter_fields])) {
+    stop("Filter fields must contain one scalar value per feature.", call. = FALSE)
+  }
   if (anyDuplicated(filter_fields)) stop("Duplicate filter fields.", call. = FALSE)
-  structure(list(data = data, title = as.character(title)[1L],
+  structure(list(data = data, title = title,
                  popup_fields = popup_fields, filter_fields = filter_fields),
             class = "gis2shiny_app")
 }
