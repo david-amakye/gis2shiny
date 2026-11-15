@@ -1,6 +1,7 @@
 # gis2shiny (development version)
 
 - Select a named layer from a multi-layer GeoPackage with the `layer` argument.
+- Shade maps by a numeric attribute with `color_by`. The legend bands stay consistent as the data is filtered.
 
 # gis2shiny 0.1.0
 

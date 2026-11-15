@@ -24,6 +24,14 @@ build_shiny_app <- function(spec) {
   legend_index <- match(TRUE, counts >= 2L & counts <= 20L)
   colors <- if (is.na(legend_index)) "#03F" else
     grDevices::hcl.colors(counts[[legend_index]], "Dark 3")
+  map_style <- NULL
+  if (!is.null(spec$color_by)) {
+    map_style <- numeric_map_style(data[[spec$color_by]], spec$color_by)
+  } else if (!is.na(legend_index)) {
+    category <- filters[[legend_index]]
+    map_style <- list(field = fields[[legend_index]], ids = category$value_ids,
+                      labels = names(category$choices), colors = colors)
+  }
   ranges <- lapply(seq_along(spec$numeric_fields), function(i) {
     field <- spec$numeric_fields[[i]]
     numeric_filter(data[[field]], field, i)
@@ -96,15 +104,15 @@ build_shiny_app <- function(spec) {
       }
       if (nrow(d) == 0L) return(m)
       labels <- popup_html(d, spec$popup_fields)
-      feature_colors <- rep(colors[[1L]], nrow(d))
-      if (!is.na(legend_index)) {
-        filter <- filters[[legend_index]]
-        ids <- filter$value_ids[visible()]
-        feature_colors <- colors[ids]
+      feature_colors <- rep("#03F", nrow(d))
+      if (!is.null(map_style)) {
+        ids <- map_style$ids[visible()]
+        feature_colors <- map_style$colors[ids]
         present <- sort(unique(ids))
-        m <- leaflet::addLegend(m, position = "bottomright", colors = colors[present],
-                                labels = htmltools::htmlEscape(names(filter$choices)[present]),
-                                title = htmltools::htmlEscape(fields[[legend_index]]),
+        m <- leaflet::addLegend(m, position = "bottomright",
+                                colors = map_style$colors[present],
+                                labels = htmltools::htmlEscape(map_style$labels[present]),
+                                title = htmltools::htmlEscape(map_style$field),
                                 opacity = 1)
       }
       typ <- families[visible()]

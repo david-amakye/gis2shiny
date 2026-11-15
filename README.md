@@ -43,7 +43,7 @@ source(system.file("examples/nc-counties.R", package = "gis2shiny", mustWork = T
   Blank or missing categories can be selected separately. Numeric filters
   start at the observed bounds and include missing and non-finite values by
   default when present.
-- The first categorical filter with 2 to 20 choices determines map colors.
+- By default, the first categorical filter with 2 to 20 choices determines map colors.
   The legend shows visible categories, and the layer menu on mixed-geometry
   maps toggles points, lines, and polygons independently.
 - The **Summary** tab counts matching features by geometry type or the
@@ -53,6 +53,11 @@ source(system.file("examples/nc-counties.R", package = "gis2shiny", mustWork = T
 Set `filter_fields` and `numeric_fields` to choose sidebar controls. Omit
 them for automatic selection or pass `character(0)` to disable either kind.
 Use `popup_fields` to choose which attributes appear when you click a feature.
+
+In the development version, use `color_by` to shade features by a numeric
+attribute, for example `gis2shiny(points, color_by = "samples")`. The map
+uses up to five color bands based on the full dataset. Filtering keeps the
+band boundaries and colors fixed and displays the bands still in view.
 
 ## Scope
 
